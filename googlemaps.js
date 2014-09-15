@@ -2,8 +2,8 @@
  *  Google Map Generator
  *
  *  Author: Clint Brown
- *  Version: v0.0.2
- *  Last modified: Monday, 15 September 2014 16:49
+ *  Version: v0.0.3
+ *  Last modified: Monday, 15 September 2014 17:00
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  *
  *  Example usage -
@@ -137,6 +137,8 @@ function googleMapGenerator (options) {
 
             settings.print.onclick = function () {
                 printGoogleMap();
+
+                return false;
             }
         }
 
