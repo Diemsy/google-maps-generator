@@ -2,8 +2,8 @@
  *  Google Map Generator
  *
  *  Author: Clint Brown
- *  Version: v0.0.1
- *  Last modified: Monday, 15 September 2014 15:52
+ *  Version: v0.0.2
+ *  Last modified: Monday, 15 September 2014 16:49
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  *
  *  Example usage -
@@ -66,6 +66,7 @@ function googleMapGenerator (options) {
         containerClass: 'map',
         printClass: 'map__print',
         legendClass: 'map__legend',
+        apiKey: null,
         legend: null,
         print: null,
         mapLat: -33.85, 
@@ -198,10 +199,15 @@ function googleMapGenerator (options) {
 
     function printGoogleMap () {
         var mapWin = window.open('', 'mapWin', 'width=640,height=640'),
+            key = '',
             mapHue = '',
             mapSaturation = '',
             markersStr = '',
             markersLen = settings.locations.length;
+
+        if (settings.key) {
+            key = '&amp;key=' + settings.key;
+        }
 
         if (settings.styles[0].stylers[0].hue) {
             mapHue = '%7Chue:0x' + settings.styles[0].stylers[0].hue.substring(1, settings.styles[0].stylers[0].hue.length);
@@ -217,7 +223,7 @@ function googleMapGenerator (options) {
 
         mapWin.focus();
         mapWin.document.write('<style>body { margin:0 } img { width: 100%; height: auto; }<\/style>');
-        mapWin.document.write('<img style="-webkit-user-select: none" src="http://maps.googleapis.com/maps/api/staticmap?center=' + settings.mapLat + ',' + settings.mapLng + '&amp;zoom=' + settings.mapZoom + '&amp;size=640x640&amp;style=stylers' + mapHue + mapSaturation + markersStr + '">');
+        mapWin.document.write('<img style="-webkit-user-select: none" src="http://maps.googleapis.com/maps/api/staticmap?center=' + settings.mapLat + ',' + settings.mapLng + '&amp;zoom=' + settings.mapZoom + key + '&amp;size=640x640&amp;style=stylers' + mapHue + mapSaturation + markersStr + '">');
         mapWin.document.write('<script>setTimeout(function () { window.focus(); window.print(); }, 1500);<\/script>');
         mapWin.document.close();
 

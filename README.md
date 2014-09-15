@@ -6,7 +6,7 @@ Javascript helper plugin for Google Maps Javascript API v3
 Demo
 --------------
 
-
+See index.html
 
 Usage
 --------------
