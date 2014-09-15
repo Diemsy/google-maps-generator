@@ -1,24 +1,76 @@
-Google Maps Generator
-=====================
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
 
-Javascript helper plugin for Google Maps Javascript API v3
+        <style>
+            /* Demo styles */
+            body {
+                font: 16px/26px Helvetica, Helvetica Neue, Arial;
+                margin: 0;
+            }
 
-Demo
---------------
+            a {
+                text-decoration: none;
+            }
 
+            .map {
+                position: relative;
+                width: 100%;
+                height: 300px;
+                height: 100vh;
+                padding: 0;
+                margin: 0;
+            }
 
+            .map__legend {
+                width: 187px;
+                padding: 5px 10px;
+                margin: 0 5px 5px 0;
+                background: #fff;
+                color: #444;
+                border: 1px solid #bbb;
+            }
 
-Usage
---------------
+            .map__legend strong {
+                color: #000;
+            }
 
-HTML
+            .map__print {
+                position: absolute;
+                left: 30px;
+                bottom: 30px;
+                z-index: 1;
+                display: inline-block;
+                padding: 6px 12px;
+                background: #444;
+                color: #fff;
+                font-size: 12px;
+                text-transform: uppercase;
+            }
 
-    <div class="selector"></div>
+            /* Prevent scroll on info windows */
+            .gm-style-iw {
+                overflow: visible;
+                padding-bottom: 15px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="map map__sydney"></div>
 
-Javscript
-
-    var g = new googleMapGenerator({
-                container: '.selector',
+        <script src="https://maps.googleapis.com/maps/api/js"></script>
+        <script src="js/googlemaps.js"></script>
+        <script type="text/javascript">
+            var sydney = new googleMapGenerator({
+                container: '.map__sydney',
                 mapLat: -33.85, 
                 mapLng: 151.24,
                 mapZoom: 12,
@@ -62,8 +114,6 @@ Javscript
                     }
                 ]
             });
-
-License
-----
-
-MIT
+        </script>
+    </body>
+</html>
