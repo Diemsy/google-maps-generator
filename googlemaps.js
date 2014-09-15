@@ -2,8 +2,8 @@
  *  Google Map Generator
  *
  *  Author: Clint Brown
- *  Version: v0.0.3
- *  Last modified: Monday, 15 September 2014 17:00
+ *  Version: v0.0.4
+ *  Last modified: Tuesday, 16 September 2014 09:23
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  *
  *  Example usage -
@@ -75,6 +75,12 @@ function googleMapGenerator (options) {
         hasInfoWindow: true,
         hasLegend: true,
         hasPrint: true,
+        hasMarkerIcon: true,
+        markerIconType: 'alpha',
+        markerIconLabel: '',
+        markerIconHexColor: 'ffffff',
+        markerIconHexBackground: '444444',
+        markerIcon: null,
         locations: [],
         styles: []
     };
@@ -164,19 +170,28 @@ function googleMapGenerator (options) {
         for (var i = 0, locationsLen = locations.length; i < locationsLen; i++) {
             var location = locations[i],
                 myLatLng = new google.maps.LatLng(location[2], location[3]),
-                marker = new google.maps.Marker({
-                    position: myLatLng,
-                    map: map,
-                    icon: 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + (i + 1) + '|444444|FFFFFF',
-                    title: location[0],
-                    html: '<div><h1>' + location[0] + '</h1>' + location[1] + '</div>',
-                    zIndex: location[4]
-                });
+                marker;
+
+            if (settings.hasMarkerIcon) {
+                getGoogleMapMarkerLabel(i);
+
+                settings.markerIcon = 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + settings.markerIconLabel + '|' + settings.markerIconHexBackground + '|' + settings.markerIconHexColor;
+            }
+
+            marker = new google.maps.Marker({
+                position: myLatLng,
+                map: map,
+                icon: settings.markerIcon,
+                title: location[0],
+                html: '<div><h1>' + location[0] + '</h1>' + location[1] + '</div>',
+                zIndex: location[4]
+            });
 
             if (settings.hasLegend) {
                 var legendItem = document.createElement('div');
-                legendItem.setAttribute('class', 'map__legend_item');
-                legendItem.innerHTML = '<strong>' + (i + 1) + '</strong>&nbsp; ' + location[0];
+
+                legendItem.setAttribute('class', 'map__legend__item');
+                legendItem.innerHTML = '<strong>' + settings.markerIconLabel + '</strong>&nbsp; ' + location[0];
                 settings.legend.appendChild(legendItem);
             }
 
@@ -187,6 +202,19 @@ function googleMapGenerator (options) {
                 });
             }
         }
+    }
+
+    function getGoogleMapMarkerLabel (i) {
+        switch (settings.markerIconType) {
+            case 'alpha':
+                settings.markerIconLabel = String.fromCharCode(97 + i).toUpperCase();
+                break;
+            case 'numeric':
+                settings.markerIconLabel = i + 1;
+                break;
+        }
+
+        return settings.markerIconLabel;
     }
 
     /**
@@ -220,7 +248,7 @@ function googleMapGenerator (options) {
         }
 
         for (var i = 0; i < markersLen; i++) {
-            markersStr += '&amp;markers=label:' + (i + 1) + '%7C' + settings.locations[i][2] + ',' + settings.locations[i][3];
+            markersStr += '&amp;markers=label:' + getGoogleMapMarkerLabel(i) + '%7C' + settings.locations[i][2] + ',' + settings.locations[i][3];
         }
 
         mapWin.focus();
@@ -330,6 +358,7 @@ function googleMapGenerator (options) {
     return {
         addGoogleMap: addGoogleMap,
         addGoogleMapMarkers: addGoogleMapMarkers,
+        getGoogleMapMarkerLabel: getGoogleMapMarkerLabel,
         printGoogleMap: printGoogleMap,
         extend: extend,
         getChildByClass: getChildByClass
