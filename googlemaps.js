@@ -2,8 +2,8 @@
  *  Google Map Generator
  *
  *  Author: Clint Brown
- *  Version: v0.0.4
- *  Last modified: Tuesday, 16 September 2014 09:23
+ *  Version: v0.0.3
+ *  Last modified: Monday, 15 September 2014 17:00
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  *
  *  Example usage -
@@ -252,9 +252,9 @@ function googleMapGenerator (options) {
         }
 
         mapWin.focus();
-        mapWin.document.write('<style>body { margin:0 } img { width: 100%; height: auto; }<\/style>');
-        mapWin.document.write('<img style="-webkit-user-select: none" src="http://maps.googleapis.com/maps/api/staticmap?center=' + settings.mapLat + ',' + settings.mapLng + '&amp;zoom=' + settings.mapZoom + key + '&amp;size=640x640&amp;style=stylers' + mapHue + mapSaturation + markersStr + '">');
-        mapWin.document.write('<script>setTimeout(function () { window.focus(); window.print(); }, 1500);<\/script>');
+        mapWin.document.write('<style>body { margin:0 } img { width: 100%; height: auto; }<\/style>' +
+            '<img style="-webkit-user-select: none" src="http://maps.googleapis.com/maps/api/staticmap?center=' + settings.mapLat + ',' + settings.mapLng + '&amp;zoom=' + settings.mapZoom + key + '&amp;size=640x640&amp;style=stylers' + mapHue + mapSaturation + markersStr + '">' + 
+            '<script>setTimeout(function () { window.focus(); window.print(); }, 1500);<\/script>');
         mapWin.document.close();
 
         return;
