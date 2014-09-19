@@ -22,6 +22,8 @@ Javscript
                 mapLat: -33.85, 
                 mapLng: 151.24,
                 mapZoom: 12,
+                markerIconType: 'numeric',
+                markerAnimation: google.maps.Animation.DROP,
                 locations: [
                     ['Bondi Beach', 'Bondi Beach or Bondi Bay is a popular beach and the name of the surrounding suburb in Sydney, New South Wales, Australia.', -33.890542, 151.274856, 1],
                     ['Surry Hills', 'Surry Hills is an affluent, inner-city suburb of Sydney, in the state of New South Wales, Australia. Surry Hills is immediately south-east of the Sydney central business district in the local government area of the City of Sydney.', -33.887050, 151.211540, 2],
