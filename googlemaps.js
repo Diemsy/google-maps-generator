@@ -2,8 +2,8 @@
  *  Google Map Generator
  *
  *  Author: Clint Brown
- *  Version: v0.0.3
- *  Last modified: Monday, 15 September 2014 17:00
+ *  Version: v0.0.4
+ *  Last modified: Friday, 19 September 2014 10:29
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  *
  *  Example usage -
@@ -19,6 +19,9 @@
  *      mapLat: -33.85, 
  *      mapLng: 151.24,
  *      mapZoom: 12,
+ *      markerIconType: 'numeric',
+ *      markerAnimation: google.maps.Animation.DROP,
+ *      markerLoad: 'scroll',
  *      locations: [
  *          ['My location', 'My location description', -33.890542, 151.274856, 1]
  *      ],
@@ -76,11 +79,14 @@ function googleMapGenerator (options) {
         hasLegend: true,
         hasPrint: true,
         hasMarkerIcon: true,
+        markerAnimation: null,
+        markerLoad: 'load',
         markerIconType: 'alpha',
         markerIconLabel: '',
         markerIconHexColor: 'ffffff',
         markerIconHexBackground: '444444',
         markerIcon: null,
+        markersAdded: false,
         locations: [],
         styles: []
     };
@@ -91,64 +97,83 @@ function googleMapGenerator (options) {
 
     var container = document.querySelectorAll(settings.container)[0];
 
+    // Options
+    var mapOptions = {
+        zoom: settings.mapZoom,
+        center: new google.maps.LatLng(settings.mapLat, settings.mapLng),
+        mapTypeControlOptions: {
+            mapTypeIds: [google.maps.MapTypeId.ROADMAP, 'map_style']
+        }
+    };
+
+    // Create map
+    var map = new google.maps.Map(container, mapOptions);
+
+    // Legend
+    if (settings.hasLegend) {
+        addGoogleMapLegend();
+    }
+
+    // Style
+    if (settings.styles) {
+        addGoogleMapStyle();
+    }
+
+    // Print
+    if (settings.hasPrint) {
+        addGoogleMapPrint();
+    }
+
+    // Markers
+    if (settings.markerLoad === 'load') {
+        addGoogleMapMarkers();
+    }
+
     /**
-     *  Add Google Map
-     *
-     *  @returns  {Object} Creates a dynamic map
+     *  Add Google Map Legend
      */
 
-    function addGoogleMap () {
-        // Options
-        var mapOptions = {
-            zoom: settings.mapZoom,
-            center: new google.maps.LatLng(settings.mapLat, settings.mapLng),
-            mapTypeControlOptions: {
-                mapTypeIds: [google.maps.MapTypeId.ROADMAP, 'map_style']
-            }
-        };
+    function addGoogleMapLegend () {
+        var legend = document.createElement('div');
 
-        // Create map
-        var map = new google.maps.Map(container, mapOptions);
+        legend.setAttribute('class', settings.legendClass);
+        container.appendChild(legend);
+        settings.legend = getChildByClass(container, settings.legendClass);
 
-        // Legend
-        if (settings.hasLegend) {
-            var legend = document.createElement('div');
+        map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(settings.legend);
+    }
 
-            legend.setAttribute('class', settings.legendClass);
-            container.appendChild(legend);
-            settings.legend = getChildByClass(container, settings.legendClass);
+    /**
+     *  Add Google Map Style
+     */
 
-            map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(settings.legend);
-        }
-
-        // Info window, markers, legend
-        addGoogleMapMarkers(map, settings.locations);
-
+    function addGoogleMapStyle () {
         // Styles
         var styledMap = new google.maps.StyledMapType(settings.styles, {name: 'Styled Map'});
 
         map.mapTypes.set('map_style', styledMap);
         map.setMapTypeId('map_style');
+    }
 
-        // Print
-        if (settings.hasPrint) {
-            var printBtn = document.createElement('a');
+    /**
+     *  Add Google Map Print
+     */
 
-            printBtn.setAttribute('class', settings.printClass);
-            printBtn.setAttribute('href', '#');
-            printBtn.innerHTML = 'Print';
-            container.appendChild(printBtn);
+    function addGoogleMapPrint () {
+        var printBtn = document.createElement('a');
 
-            settings.print = getChildByClass(container, settings.printClass);
+        printBtn.setAttribute('class', settings.printClass);
+        printBtn.setAttribute('href', '#');
+        printBtn.innerHTML = 'Print';
+        container.appendChild(printBtn);
 
-            settings.print.onclick = function () {
-                printGoogleMap();
+        settings.print = getChildByClass(container, settings.printClass);
 
-                return false;
-            }
+        settings.print.onclick = function () {
+            printGoogleMap();
+
+            return false;
         }
-
-        return map;
     }
 
     /**
@@ -157,7 +182,17 @@ function googleMapGenerator (options) {
      *  @returns  Adds markers, info window and legend to map (all are optional)
      */
 
-    function addGoogleMapMarkers (map, locations) {
+    function addGoogleMapMarkers () {
+        var latestKnownScrollY = window.scrollY || document.documentElement.scrollTop;
+
+        if (settings.markersAdded) {
+            return false;
+        }
+
+        if (settings.markerLoad === 'scroll' && container.offsetTop > latestKnownScrollY) {
+            return false;
+        }
+
         if (settings.hasInfoWindow) {
             var infowindow = null;
 
@@ -167,8 +202,8 @@ function googleMapGenerator (options) {
             });
         }
 
-        for (var i = 0, locationsLen = locations.length; i < locationsLen; i++) {
-            var location = locations[i],
+        for (var i = 0, locationsLen = settings.locations.length; i < locationsLen; i++) {
+            var location = settings.locations[i],
                 myLatLng = new google.maps.LatLng(location[2], location[3]),
                 marker;
 
@@ -182,6 +217,7 @@ function googleMapGenerator (options) {
                 position: myLatLng,
                 map: map,
                 icon: settings.markerIcon,
+                animation: settings.markerAnimation,
                 title: location[0],
                 html: '<div><h1>' + location[0] + '</h1>' + location[1] + '</div>',
                 zIndex: location[4]
@@ -202,7 +238,15 @@ function googleMapGenerator (options) {
                 });
             }
         }
+
+        settings.markersAdded = true;
     }
+
+    /**
+     *  Get Google Map Marker Labels
+     *
+     *  @returns  {String, number} character (A, B, C) or number based on the number input (i starts at 0)
+     */
 
     function getGoogleMapMarkerLabel (i) {
         switch (settings.markerIconType) {
@@ -353,10 +397,10 @@ function googleMapGenerator (options) {
         return childNode;
     }
 
-    addGoogleMap();
-
     return {
-        addGoogleMap: addGoogleMap,
+        addGoogleMapLegend: addGoogleMapLegend,
+        addGoogleMapStyle: addGoogleMapStyle,
+        addGoogleMapPrint: addGoogleMapPrint,
         addGoogleMapMarkers: addGoogleMapMarkers,
         getGoogleMapMarkerLabel: getGoogleMapMarkerLabel,
         printGoogleMap: printGoogleMap,
