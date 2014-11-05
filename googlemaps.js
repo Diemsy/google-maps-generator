@@ -3,8 +3,8 @@
  *
  *  Author: Clint Brown
  *  Website: https://github.com/clintioo/google-maps-generator
- *  Version: v0.0.4
- *  Last modified: Friday, 19 September 2014 10:29
+ *  Version: v0.0.5
+ *  Last modified: Wednesday, 5 November 2014 16:46
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  *
  *  Example usage -
