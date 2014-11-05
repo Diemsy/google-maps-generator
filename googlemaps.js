@@ -2,6 +2,7 @@
  *  Google Map Generator
  *
  *  Author: Clint Brown
+ *  Website: https://github.com/clintioo/google-maps-generator
  *  Version: v0.0.4
  *  Last modified: Friday, 19 September 2014 10:29
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
@@ -14,6 +15,8 @@
  *
  *  Javascript
  *
+ *  <script src="//maps.googleapis.com/maps/api/js"></script>
+ *  <script>
  *  var g = new googleMapGenerator({
  *      container: '.selector',
  *      mapLat: -33.85, 
@@ -57,6 +60,7 @@
  *          }
  *      ]
  *  });
+ *  </script>
  *
  */
 
@@ -75,6 +79,7 @@ function googleMapGenerator (options) {
         mapLat: -33.85, 
         mapLng: 151.24,
         mapZoom: 12,
+        hasStaticMap: false,
         hasInfoWindow: true,
         hasLegend: true,
         hasPrint: true,
@@ -88,45 +93,66 @@ function googleMapGenerator (options) {
         markerIcon: null,
         markersAdded: false,
         locations: [],
-        styles: []
+        styles: [],
+        docWidth: document.body.clientWidth
     };
 
     if (options) {
         extend(settings, options);
     }
 
-    var container = document.querySelectorAll(settings.container)[0];
+    var container = document.querySelectorAll(settings.container)[0],
+        map,
+        mapOptions;
 
-    // Options
-    var mapOptions = {
-        zoom: settings.mapZoom,
-        center: new google.maps.LatLng(settings.mapLat, settings.mapLng),
-        mapTypeControlOptions: {
-            mapTypeIds: [google.maps.MapTypeId.ROADMAP, 'map_style']
+    /**
+     *  Medium and above screens - dynamic map
+     *  Small screens - static map
+     */
+
+    if (settings.docWidth < 768 && settings.hasStaticMap === true) {
+        addGoogleMapStatic(settings.docWidth, settings.docWidth);
+    } else {
+        addGoogleMapDynamic();
+    }
+
+    /**
+     *  Add Google Map Dynamic
+     */
+
+    function addGoogleMapDynamic () {
+        // Options
+        mapOptions = {
+            zoom: settings.mapZoom,
+            center: new google.maps.LatLng(settings.mapLat, settings.mapLng),
+            mapTypeControlOptions: {
+                mapTypeIds: [google.maps.MapTypeId.ROADMAP, 'map_style']
+            }
+        };
+
+        map = new google.maps.Map(container, mapOptions);
+
+        // Legend
+        if (settings.hasLegend) {
+            addGoogleMapLegend();
         }
-    };
 
-    // Create map
-    var map = new google.maps.Map(container, mapOptions);
+        // Style
+        if (settings.styles) {
+            addGoogleMapStyle();
+        }
 
-    // Legend
-    if (settings.hasLegend) {
-        addGoogleMapLegend();
-    }
+        // Markers
+        if (settings.markerLoad === 'load') {
+            addGoogleMapMarkers();
+        }
 
-    // Style
-    if (settings.styles) {
-        addGoogleMapStyle();
-    }
+        // Print
+        if (settings.hasPrint) {
+            addGoogleMapPrintBtn();
+        }
 
-    // Print
-    if (settings.hasPrint) {
-        addGoogleMapPrint();
-    }
-
-    // Markers
-    if (settings.markerLoad === 'load') {
-        addGoogleMapMarkers();
+        return map;
     }
 
     /**
@@ -156,10 +182,98 @@ function googleMapGenerator (options) {
     }
 
     /**
+     *  Add Google Map markers (medium and above screens only)
+     *
+     *  @returns  Adds markers, info window and legend to map (all are optional)
+     */
+
+    function addGoogleMapMarkers () {
+        if (settings.hasStaticMap === false) {
+            var latestKnownScrollY = window.scrollY || document.documentElement.scrollTop,
+                markers = [];
+
+            if (settings.markersAdded) {
+                return false;
+            }
+
+            if (settings.markerLoad === 'scroll' && container.offsetTop > latestKnownScrollY) {
+                return false;
+            }
+
+            if (settings.hasInfoWindow) {
+                var infowindow = null;
+
+                infowindow = new google.maps.InfoWindow({
+                    content: '',
+                    maxWidth: 300
+                });
+            }
+
+            for (var i = 0, locationsLen = settings.locations.length; i < locationsLen; i++) {
+                var location = settings.locations[i],
+                    myLatLng = new google.maps.LatLng(location[2], location[3]),
+                    marker;
+
+                if (settings.hasMarkerIcon) {
+                    // If image URL, use icon; else default to Google Chart API marker
+                    if (location[5]) {
+                        settings.markerIcon = {
+                            url: location[5],
+                            scaledSize: new google.maps.Size(50, 50)
+                        };
+                    } else {
+                        getGoogleMapMarkerLabel(i);
+                        settings.markerIcon = 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + settings.markerIconLabel + '|' + settings.markerIconHexBackground + '|' + settings.markerIconHexColor;
+                    }
+                }
+
+                marker = new google.maps.Marker({
+                    position: myLatLng,
+                    map: map,
+                    icon: settings.markerIcon,
+                    animation: settings.markerAnimation,
+                    title: location[0],
+                    html: '<div><h1>' + location[0] + '</h1>' + location[1] + '</div>',
+                    zIndex: location[4]
+                });
+
+                markers.push(marker);
+
+                if (settings.hasLegend) {
+                    var legendItem = document.createElement('div');
+
+                    legendItem.setAttribute('class', 'map__legend__item');
+                    legendItem.innerHTML = '<strong>' + settings.markerIconLabel + '</strong>&nbsp;<a href="#">' + location[0] + '</a>';
+                    settings.legend.appendChild(legendItem);
+                }
+
+                if (settings.hasInfoWindow) {
+                    google.maps.event.addListener(marker, 'click', function () {
+                        infowindow.setContent(this.html);
+                        infowindow.open(map, this);
+                    });
+                }
+            }
+
+            if (settings.hasLegend) {
+                $('.' + settings.legendClass).on('click', 'a', function (e) {
+                    e.preventDefault();
+
+                    var index = $(e.target).parent().index();
+
+                    google.maps.event.trigger(markers[index], 'click');
+                });
+            }
+
+            settings.markersAdded = true;
+        }
+    }
+
+    /**
      *  Add Google Map Print
      */
 
-    function addGoogleMapPrint () {
+    function addGoogleMapPrintBtn () {
         var printBtn = document.createElement('a');
 
         printBtn.setAttribute('class', settings.printClass);
@@ -177,69 +291,47 @@ function googleMapGenerator (options) {
     }
 
     /**
-     *  Add Google Map markers
+     *  Add static Google Map
      *
-     *  @returns  Adds markers, info window and legend to map (all are optional)
+     *  @returns  {Object} update container with static Google Map image
      */
 
-    function addGoogleMapMarkers () {
-        var latestKnownScrollY = window.scrollY || document.documentElement.scrollTop;
+    function addGoogleMapStatic (width, height) {
+        return container.innerHTML = generateGoogleMapStatic(width, height);
+    }
 
-        if (settings.markersAdded) {
-            return false;
+    /**
+     *  Generate static Google Map
+     *
+     *  @returns  {String} static Google Map image
+     */
+
+    function generateGoogleMapStatic (width, height) {
+        var key = '',
+            mapHue = '',
+            mapSaturation = '',
+            markersStr = '',
+            markersLen = settings.locations.length,
+            width = width || 640,
+            height = height || 640;
+
+        if (settings.key) {
+            key = '&amp;key=' + settings.key;
         }
 
-        if (settings.markerLoad === 'scroll' && container.offsetTop > latestKnownScrollY) {
-            return false;
+        if (settings.styles[0].stylers[0].hue) {
+            mapHue = '%7Chue:0x' + settings.styles[0].stylers[0].hue.substring(1, settings.styles[0].stylers[0].hue.length);
         }
 
-        if (settings.hasInfoWindow) {
-            var infowindow = null;
-
-            infowindow = new google.maps.InfoWindow({
-                content: '',
-                maxWidth: 300
-            });
+        if (settings.styles[0].stylers[1].saturation) {
+            mapSaturation = '%7Csaturation:' + settings.styles[0].stylers[1].saturation;
         }
 
-        for (var i = 0, locationsLen = settings.locations.length; i < locationsLen; i++) {
-            var location = settings.locations[i],
-                myLatLng = new google.maps.LatLng(location[2], location[3]),
-                marker;
-
-            if (settings.hasMarkerIcon) {
-                getGoogleMapMarkerLabel(i);
-
-                settings.markerIcon = 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + settings.markerIconLabel + '|' + settings.markerIconHexBackground + '|' + settings.markerIconHexColor;
-            }
-
-            marker = new google.maps.Marker({
-                position: myLatLng,
-                map: map,
-                icon: settings.markerIcon,
-                animation: settings.markerAnimation,
-                title: location[0],
-                html: '<div><h1>' + location[0] + '</h1>' + location[1] + '</div>',
-                zIndex: location[4]
-            });
-
-            if (settings.hasLegend) {
-                var legendItem = document.createElement('div');
-
-                legendItem.setAttribute('class', 'map__legend__item');
-                legendItem.innerHTML = '<strong>' + settings.markerIconLabel + '</strong>&nbsp; ' + location[0];
-                settings.legend.appendChild(legendItem);
-            }
-
-            if (settings.hasInfoWindow) {
-                google.maps.event.addListener(marker, 'click', function () {
-                    infowindow.setContent(this.html);
-                    infowindow.open(map, this);
-                });
-            }
+        for (var i = 0; i < markersLen; i++) {
+            markersStr += '&amp;markers=label:' + getGoogleMapMarkerLabel(i) + '%7C' + settings.locations[i][2] + ',' + settings.locations[i][3];
         }
 
-        settings.markersAdded = true;
+        return '<a href="https://www.google.com/maps/@' + settings.mapLat + ',' + settings.mapLng + ',' + settings.mapZoom + 'z"><img style="-webkit-user-select: none" src="http://maps.googleapis.com/maps/api/staticmap?center=' + settings.mapLat + ',' + settings.mapLng + '&amp;zoom=' + settings.mapZoom + key + '&amp;size=' + width + 'x' + height + '&amp;style=stylers' + mapHue + mapSaturation + markersStr + '"></a>';
     }
 
     /**
@@ -272,38 +364,15 @@ function googleMapGenerator (options) {
      */
 
     function printGoogleMap () {
-        var mapWin = window.open('', 'mapWin', 'width=640,height=640'),
-            key = '',
-            mapHue = '',
-            mapSaturation = '',
-            markersStr = '',
-            markersLen = settings.locations.length;
-
-        if (settings.key) {
-            key = '&amp;key=' + settings.key;
-        }
-
-        if (settings.styles[0].stylers[0].hue) {
-            mapHue = '%7Chue:0x' + settings.styles[0].stylers[0].hue.substring(1, settings.styles[0].stylers[0].hue.length);
-        }
-
-        if (settings.styles[0].stylers[1].saturation) {
-            mapSaturation = '%7Csaturation:' + settings.styles[0].stylers[1].saturation;
-        }
-
-        for (var i = 0; i < markersLen; i++) {
-            markersStr += '&amp;markers=label:' + getGoogleMapMarkerLabel(i) + '%7C' + settings.locations[i][2] + ',' + settings.locations[i][3];
-        }
+        var mapWin = window.open('', 'mapWin', 'width=640,height=640');
 
         mapWin.focus();
         mapWin.document.write('<style>body { margin:0 } img { width: 100%; height: auto; }<\/style>' +
-            '<img style="-webkit-user-select: none" src="http://maps.googleapis.com/maps/api/staticmap?center=' + settings.mapLat + ',' + settings.mapLng + '&amp;zoom=' + settings.mapZoom + key + '&amp;size=640x640&amp;style=stylers' + mapHue + mapSaturation + markersStr + '">' + 
-            '<script>setTimeout(function () { window.focus(); window.print(); }, 1500);<\/script>');
+            generateGoogleMapStatic() + '<script>setTimeout(function () { window.focus(); window.print(); }, 1500);<\/script>');
         mapWin.document.close();
 
-        return;
+        return mapWin;
     }
-
 
     /**
      *  Extend
@@ -318,7 +387,7 @@ function googleMapGenerator (options) {
             deep = false;
 
         // Handle a deep copy situation
-        if (typeof target === "boolean") {
+        if (typeof target === 'boolean') {
             deep = target;
             target = arguments[1] || {};
             // skip the boolean and the target
@@ -326,7 +395,7 @@ function googleMapGenerator (options) {
         }
 
         // Handle case when target is a string or something (possible in deep copy)
-        if (typeof target !== "object" && !jQuery.isFunction(target)) {
+        if (typeof target !== 'object' && !jQuery.isFunction(target)) {
             target = {};
         }
 
@@ -399,9 +468,12 @@ function googleMapGenerator (options) {
 
     return {
         addGoogleMapLegend: addGoogleMapLegend,
-        addGoogleMapStyle: addGoogleMapStyle,
-        addGoogleMapPrint: addGoogleMapPrint,
         addGoogleMapMarkers: addGoogleMapMarkers,
+        addGoogleMapStatic: addGoogleMapStatic,
+        addGoogleMapDynamic: addGoogleMapDynamic,
+        generateGoogleMapStatic: generateGoogleMapStatic,
+        addGoogleMapStyle: addGoogleMapStyle,
+        addGoogleMapPrintBtn: addGoogleMapPrintBtn,
         getGoogleMapMarkerLabel: getGoogleMapMarkerLabel,
         printGoogleMap: printGoogleMap,
         extend: extend,

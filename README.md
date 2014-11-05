@@ -17,7 +17,9 @@ HTML
 
 Javscript
 
-    var g = new googleMapGenerator({
+    <script src="//maps.googleapis.com/maps/api/js"></script>
+    <script>
+        var g = new googleMapGenerator({
                 container: '.selector',
                 mapLat: -33.85, 
                 mapLng: 151.24,
@@ -64,6 +66,7 @@ Javscript
                     }
                 ]
             });
+        </script>
 
 License
 ----
