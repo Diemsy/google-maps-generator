@@ -3,8 +3,8 @@
  *
  *  Author: Clint Brown
  *  Website: https://github.com/clintioo/google-maps-generator
- *  Version: v0.0.5
- *  Last modified: Wednesday, 5 November 2014 16:46
+ *  Version: v0.0.6
+ *  Last modified: Tuesday 11 November 2014 14:42
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  *
  *  Example usage -
@@ -17,7 +17,7 @@
  *
  *  <script src="//maps.googleapis.com/maps/api/js"></script>
  *  <script>
- *  var g = new googleMapGenerator({
+ *  var map = new googleMapGenerator({
  *      container: '.selector',
  *      mapLat: -33.85, 
  *      mapLng: 151.24,
@@ -26,7 +26,7 @@
  *      markerAnimation: google.maps.Animation.DROP,
  *      markerLoad: 'scroll',
  *      locations: [
- *          ['My location', 'My location description', -33.890542, 151.274856, 1]
+ *          ['My location', 'My location address', My location description', -33.890542, 151.274856, 1, '/path/to/marker-icon.png']
  *      ],
  *      styles: [
  *          {
@@ -68,50 +68,27 @@ function googleMapGenerator (options) {
 
     "use strict";
 
-    var settings = {
-        container: null,
-        containerClass: 'map',
-        printClass: 'map__print',
-        legendClass: 'map__legend',
-        apiKey: null,
-        legend: null,
-        print: null,
-        mapLat: -33.85, 
-        mapLng: 151.24,
-        mapZoom: 12,
-        hasStaticMap: false,
-        hasInfoWindow: true,
-        hasLegend: true,
-        hasPrint: true,
-        hasMarkerIcon: true,
-        markerAnimation: null,
-        markerLoad: 'load',
-        markerIconType: 'alpha',
-        markerIconLabel: '',
-        markerIconHexColor: 'ffffff',
-        markerIconHexBackground: '444444',
-        markerIcon: null,
-        markersAdded: false,
-        locations: [],
-        styles: [],
-        docWidth: document.body.clientWidth
-    };
-
-    if (options) {
-        extend(settings, options);
+    if (!(this instanceof googleMapGenerator)) {
+        return new googleMapGenerator(options);
     }
 
-    var container = document.querySelectorAll(settings.container)[0],
+    var settings = googleMapGenerator.options,
+        container = document.querySelectorAll(settings.mapStatic)[0] || document.querySelectorAll(settings.container)[0],
         map,
         mapOptions;
+
+    if (options) {
+        settings = extend(googleMapGenerator.options, options);
+    }
 
     /**
      *  Medium and above screens - dynamic map
      *  Small screens - static map
      */
 
-    if (settings.docWidth < 768 && settings.hasStaticMap === true) {
+    if (settings.docWidth < settings.breakpointDynamicMap && settings.hasStaticMap === true) {
         addGoogleMapStatic(settings.docWidth, settings.docWidth);
+        generateGoogleMapDynamic();
     } else {
         addGoogleMapDynamic();
     }
@@ -205,20 +182,20 @@ function googleMapGenerator (options) {
 
                 infowindow = new google.maps.InfoWindow({
                     content: '',
-                    maxWidth: 300
+                    maxWidth: 240
                 });
             }
 
             for (var i = 0, locationsLen = settings.locations.length; i < locationsLen; i++) {
                 var location = settings.locations[i],
-                    myLatLng = new google.maps.LatLng(location[2], location[3]),
+                    myLatLng = new google.maps.LatLng(location[3], location[4]),
                     marker;
 
                 if (settings.hasMarkerIcon) {
                     // If image URL, use icon; else default to Google Chart API marker
-                    if (location[5]) {
+                    if (location[6]) {
                         settings.markerIcon = {
-                            url: location[5],
+                            url: location[6],
                             scaledSize: new google.maps.Size(50, 50)
                         };
                     } else {
@@ -233,8 +210,8 @@ function googleMapGenerator (options) {
                     icon: settings.markerIcon,
                     animation: settings.markerAnimation,
                     title: location[0],
-                    html: '<div><h1>' + location[0] + '</h1>' + location[1] + '</div>',
-                    zIndex: location[4]
+                    html: '<div><span class="map__title">' + location[0] + '</span><span class="map__address">' + location[1] + '</span><span class="map__description">' + location[2] + '</span></div>',
+                    zIndex: location[5]
                 });
 
                 markers.push(marker);
@@ -243,7 +220,7 @@ function googleMapGenerator (options) {
                     var legendItem = document.createElement('div');
 
                     legendItem.setAttribute('class', 'map__legend__item');
-                    legendItem.innerHTML = '<strong>' + settings.markerIconLabel + '</strong>&nbsp;<a href="#">' + location[0] + '</a>';
+                    legendItem.innerHTML = '<strong>' + settings.markerIconLabel + '</strong>&nbsp;&nbsp;<a href="#">' + location[0] + '</a>';
                     settings.legend.appendChild(legendItem);
                 }
 
@@ -309,6 +286,7 @@ function googleMapGenerator (options) {
     function generateGoogleMapStatic (width, height) {
         var key = '',
             mapHue = '',
+            mapLegend = '',
             mapSaturation = '',
             markersStr = '',
             markersLen = settings.locations.length,
@@ -327,11 +305,53 @@ function googleMapGenerator (options) {
             mapSaturation = '%7Csaturation:' + settings.styles[0].stylers[1].saturation;
         }
 
+        mapLegend += '<div class="map__legend"><ul>';
+
         for (var i = 0; i < markersLen; i++) {
-            markersStr += '&amp;markers=label:' + getGoogleMapMarkerLabel(i) + '%7C' + settings.locations[i][2] + ',' + settings.locations[i][3];
+            markersStr += '&amp;markers=label:' + getGoogleMapMarkerLabel(i) + '%7C' + settings.locations[i][3] + ',' + settings.locations[i][4];
+            mapLegend += '<li><span class="map__marker">' + getGoogleMapMarkerLabel(i) + '</span> <strong>' + settings.locations[i][0] + '</strong><br>' + settings.locations[i][1] + '</li>';
         }
 
-        return '<a href="https://www.google.com/maps/@' + settings.mapLat + ',' + settings.mapLng + ',' + settings.mapZoom + 'z"><img style="-webkit-user-select: none" src="http://maps.googleapis.com/maps/api/staticmap?center=' + settings.mapLat + ',' + settings.mapLng + '&amp;zoom=' + settings.mapZoom + key + '&amp;size=' + width + 'x' + height + '&amp;style=stylers' + mapHue + mapSaturation + markersStr + '"></a>';
+        mapLegend += '</ul></div>';
+
+        return '<div class="map__static"><img style="-webkit-user-select: none" src="http://maps.googleapis.com/maps/api/staticmap?center=' + settings.mapLat + ',' + settings.mapLng + '&amp;zoom=' + settings.mapZoom + key + '&amp;size=' + width + 'x' + height + '&amp;style=stylers' + mapHue + mapSaturation + markersStr + '"></div>' + mapLegend;
+    }
+
+    /**
+     *  Generate dynamic Google Map
+     *
+     *  @returns  {String} dynamic Google Map
+     */
+
+    function generateGoogleMapDynamic () {
+        var mapStatic = document.querySelectorAll(settings.mapStatic)[0];
+
+        mapStatic.onclick = function (e) {
+            if (!document.querySelectorAll(settings.mapDynamic)[0]) {
+                mapStatic.style.height = mapStatic.offsetHeight * 2.5 + 'px';
+                loadGoogleMapJs();
+                return false;
+            }
+        };
+    }
+
+    /**
+     *  Load Google Map JS API
+     *
+     *  @returns  {object} loads Google Maps JS API library
+     */
+
+    function loadGoogleMapJs () {
+        var script = document.createElement('script');
+
+        // Reset options to dynamic map
+        googleMapGenerator.options.hasStaticMap = false;
+        googleMapGenerator.options.markerLoad = 'load';
+
+        script.type = 'text/javascript';
+        script.src = 'https://maps.googleapis.com/maps/api/js?v=3.exp&' + 'callback=googleMapGenerator';
+        
+        return document.body.appendChild(script);
     }
 
     /**
@@ -367,7 +387,8 @@ function googleMapGenerator (options) {
         var mapWin = window.open('', 'mapWin', 'width=640,height=640');
 
         mapWin.focus();
-        mapWin.document.write('<style>body { margin:0 } img { width: 100%; height: auto; }<\/style>' +
+        mapWin.document.write('<style>body { margin:0 } img { width: 100%; height: auto; } .map__legend ul { padding: 0; margin: 1.5em 0 0; } ' + 
+            '.map__legend ul li { float: left; width: 50%; list-style: none; margin: 0 0 1em; font: 12px sans-serif; }<\/style>' +
             generateGoogleMapStatic() + '<script>setTimeout(function () { window.focus(); window.print(); }, 1500);<\/script>');
         mapWin.document.close();
 
@@ -467,17 +488,50 @@ function googleMapGenerator (options) {
     }
 
     return {
-        addGoogleMapLegend: addGoogleMapLegend,
-        addGoogleMapMarkers: addGoogleMapMarkers,
-        addGoogleMapStatic: addGoogleMapStatic,
         addGoogleMapDynamic: addGoogleMapDynamic,
-        generateGoogleMapStatic: generateGoogleMapStatic,
+        addGoogleMapLegend: addGoogleMapLegend,
         addGoogleMapStyle: addGoogleMapStyle,
+        addGoogleMapMarkers: addGoogleMapMarkers,
         addGoogleMapPrintBtn: addGoogleMapPrintBtn,
+        addGoogleMapStatic: addGoogleMapStatic,
+        generateGoogleMapStatic: generateGoogleMapStatic,
+        generateGoogleMapDynamic: generateGoogleMapDynamic,
+        loadGoogleMapJs: loadGoogleMapJs,
         getGoogleMapMarkerLabel: getGoogleMapMarkerLabel,
         printGoogleMap: printGoogleMap,
         extend: extend,
         getChildByClass: getChildByClass
     }
 
+};
+
+googleMapGenerator.options = {
+    container: '.map',
+    mapStatic: '.map__static',
+    mapDynamic: '.gm-style',
+    printClass: 'map__print',
+    legendClass: 'map__legend',
+    apiKey: null,
+    legend: null,
+    print: null,
+    mapLat: -33.85, 
+    mapLng: 151.24,
+    mapZoom: 12,
+    hasStaticMap: false,
+    hasInfoWindow: true,
+    hasLegend: true,
+    hasPrint: true,
+    hasMarkerIcon: true,
+    markerAnimation: null,
+    markerLoad: 'load',
+    markerIconType: 'alpha',
+    markerIconLabel: '',
+    markerIconHexColor: 'ffffff',
+    markerIconHexBackground: '444444',
+    markerIcon: null,
+    markersAdded: false,
+    locations: [],
+    styles: [],
+    docWidth: document.body.clientWidth,
+    breakpointDynamicMap: 768
 };
