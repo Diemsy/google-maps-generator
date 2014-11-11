@@ -17,6 +17,7 @@ HTML
 
 Javscript
 
+    <script src="googlemaps.min.js"></script>
     <script>
         var map = new googleMapGenerator({
             container: '.selector',
