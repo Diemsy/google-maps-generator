@@ -3,8 +3,8 @@
  *
  *  Author: Clint Brown
  *  Website: https://github.com/clintioo/google-maps-generator
- *  Version: v0.0.8
- *  Last modified: Wednesday 13 November 2014 11:30
+ *  Version: v0.0.9
+ *  Last modified: Friday 14 November 2014 09:46
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  */
 function googleMapGenerator(options) {
@@ -303,13 +303,17 @@ function googleMapGenerator(options) {
       }
 
     if (settings.hasLegend) {
-      $('.' + settings.legendClass).on('click', 'a', function(e) {
-        e.preventDefault();
+      var legendItems = document.querySelectorAll('.' + settings.legendClass + ' a'),
+        legendItemsLen = legendItems.length;
 
-        var index = $(e.target).parent().index();
-
-        google.maps.event.trigger(markers[index], 'click');
-      });
+      for (var i = 0; i < legendItemsLen; i++) {
+        (function (index) {
+          legendItems[i].onclick = function(e) {
+            e.preventDefault();
+            google.maps.event.trigger(markers[index], 'click');
+          }
+        })(i);
+      }
     }
 
     return settings.markersAdded = true;
