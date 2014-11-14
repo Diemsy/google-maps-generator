@@ -3,8 +3,8 @@
  *
  *  Author: Clint Brown
  *  Website: https://github.com/clintioo/google-maps-generator
- *  Version: v0.0.9
- *  Last modified: Friday 14 November 2014 09:46
+ *  Version: v0.1.0
+ *  Last modified: Friday 14 November 2014 16:05
  *  Description: Javascript helper plugin for Google Maps Javscript API v3
  */
 function googleMapGenerator(options) {
@@ -37,8 +37,8 @@ function googleMapGenerator(options) {
 
   function init() {
     if (!hasGoogleMapsJS() && settings.docWidth >= settings.breakpointDynamicMap) {
-        loadGoogleMapJs();
-        return false;
+      loadGoogleMapJs();
+      return false;
     }
 
     if (settings.docWidth < settings.breakpointDynamicMap && settings.isStaticMap) {
@@ -258,49 +258,53 @@ function googleMapGenerator(options) {
       });
     }
 
-      for (var i = 0, locationsLen = settings.locations.length; i < locationsLen; i++) {
-        var location = settings.locations[i],
-          myLatLng = new google.maps.LatLng(location[3], location[4]),
-          marker;
+    for (var i = 0, locationsLen = settings.locations.length; i < locationsLen; i++) {
+      var location = settings.locations[i],
+        myLatLng = new google.maps.LatLng(location[3], location[4]),
+        marker;
 
-        if (settings.hasMarkerIcon) {
-          // If image URL, use icon; else default to Google Chart API marker
-          if (location[6]) {
-            settings.markerIcon = {
-              url: location[6]
-            };
-          } else {
-            settings.markerIcon = 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + getGoogleMapMarkerLabel(i) + '|' + settings.markerIconHexBackground + '|' + settings.markerIconHexColor;
-          }
-        }
-
-        marker = new google.maps.Marker({
-          position: myLatLng,
-          map: map,
-          icon: settings.markerIcon,
-          animation: settings.markerAnimation,
-          title: location[0],
-          html: '<div><span class="map__title">' + location[0] + '</span><span class="map__address">' + location[1] + '</span><span class="map__description">' + location[2] + '</span></div>',
-          zIndex: location[5]
-        });
-
-        markers.push(marker);
-
-        if (settings.hasLegend) {
-          var legendItem = document.createElement('div');
-
-          legendItem.setAttribute('class', 'map__legend__item');
-          legendItem.innerHTML = '<strong>' + settings.markerIconLabel + '</strong>&nbsp;&nbsp;<a href="#">' + location[0] + '</a>';
-          settings.legend.appendChild(legendItem);
-        }
-
-        if (settings.hasInfoWindow) {
-          google.maps.event.addListener(marker, 'click', function() {
-            infowindow.setContent(this.html);
-            infowindow.open(map, this);
-          });
+      if (settings.hasMarkerIcon) {
+        // If image URL, use icon; else default to Google Chart API marker
+        if (location[6]) {
+          settings.markerIcon = {
+            url: location[6]
+          };
+        } else {
+          settings.markerIcon = 'http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=' + getGoogleMapMarkerLabel(i) + '|' + settings.markerIconHexBackground + '|' + settings.markerIconHexColor;
         }
       }
+
+      marker = new google.maps.Marker({
+        position: myLatLng,
+        map: map,
+        icon: settings.markerIcon,
+        animation: settings.markerAnimation,
+        title: location[0],
+        html: '<div><span class="map__title">' + location[0] + '</span><span class="map__address">' + location[1] + '</span><span class="map__description">' + location[2] + '</span></div>',
+        zIndex: location[5]
+      });
+
+      markers.push(marker);
+
+      if (settings.hasLegend) {
+        var legendItem = document.createElement('div');
+
+        legendItem.setAttribute('class', 'map__legend__item');
+        legendItem.innerHTML = '<strong>' + settings.markerIconLabel + '</strong>&nbsp;&nbsp;<a href="#">' + location[0] + '</a>';
+        settings.legend.appendChild(legendItem);
+      }
+
+      if (settings.hasInfoWindow) {
+        google.maps.event.addListener(marker, 'click', function() {
+          infowindow.setContent(this.html);
+          infowindow.open(map, this);
+        });
+
+        google.maps.event.addListener(map, 'click', function() {
+          infowindow.close(map, this);
+        });
+      }
+    }
 
     if (settings.hasLegend) {
       var legendItems = document.querySelectorAll('.' + settings.legendClass + ' a'),
